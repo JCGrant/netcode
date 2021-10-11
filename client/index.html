@@ -129,13 +129,13 @@
             run();
             break;
           case "PLAYER_JOINED":
-            state.players[event.id] = event.location;
+            state.players[event.id] = event.player;
             break;
           case "PLAYER_LEFT":
             delete state.players[event.id];
             break;
           case "PLAYER_MOVED":
-            state.players[event.id] = event.location;
+            state.players[event.id].location = event.location;
             break;
         }
         console.log(state);
@@ -144,20 +144,27 @@
       const render = () => {
         ctx.fillStyle = "white";
         ctx.fillRect(0, 0, width, height);
-        const { x: playerX, y: playerY } = state.players[playerId];
-        Object.entries(state.players).forEach(([id, { x, y }]) => {
-          if (id === playerId) {
-            return;
+        const { x: playerX, y: playerY } = state.players[playerId].location;
+        Object.entries(state.players).forEach(
+          ([
+            id,
+            {
+              location: { x, y },
+            },
+          ]) => {
+            if (id === playerId) {
+              return;
+            }
+            const dx = x - playerX;
+            const dy = y - playerY;
+            drawOtherPlayer(dx, dy);
           }
-          const dx = x - playerX;
-          const dy = y - playerY;
-          drawOtherPlayer(dx, dy);
-        });
+        );
         drawPlayer();
       };
 
       const update = () => {
-        const { x: playerX, y: playerY } = state.players[playerId];
+        const { x: playerX, y: playerY } = state.players[playerId].location;
         const velocity = { x: 0, y: 0 };
         if (keys["w"]) {
           velocity.y = playerSpeed;
@@ -174,7 +181,7 @@
         if (velocity.x !== 0 || velocity.y !== 0) {
           send({
             kind: "MOVE_PLAYER",
-            location: { x: playerX + velocity.x, y: playerY + velocity.y },
+            velocity,
           });
         }
       };

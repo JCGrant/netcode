@@ -19,9 +19,17 @@ wss.on("connection", (ws) => {
     client.send(JSON.stringify(event));
   };
 
-  const broadcast = (event) => {
+  const broadcastOthers = (event) => {
     wss.clients.forEach((client) => {
       if (client !== ws && client.readyState === WebSocket.OPEN) {
+        send(event, client);
+      }
+    });
+  };
+
+  const broadcastAll = (event) => {
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
         send(event, client);
       }
     });
@@ -32,12 +40,16 @@ wss.on("connection", (ws) => {
     console.log(action);
     switch (action.kind) {
       case "MOVE_PLAYER":
-        state.players[id] = action.location;
-        send({ kind: "PLAYER_MOVED", id, location: action.location });
-        broadcast({
+        const oldLocation = state.players[id].location;
+        const newLocation = {
+          x: oldLocation.x + action.velocity.x,
+          y: oldLocation.y + action.velocity.y,
+        };
+        state.players[id].location = newLocation;
+        broadcastAll({
           kind: "PLAYER_MOVED",
           id,
-          location: action.location,
+          location: newLocation,
         });
         break;
     }
@@ -45,13 +57,12 @@ wss.on("connection", (ws) => {
 
   ws.on("close", () => {
     delete state.players[id];
-    broadcast({ kind: "PLAYER_LEFT", id });
+    broadcastOthers({ kind: "PLAYER_LEFT", id });
     console.log(`${id} has disconnected`);
   });
 
-  const location = { x: 0, y: 0 };
-  state.players[id] = location;
+  state.players[id] = { location: { x: 0, y: 0 } };
   send({ kind: "SET_STATE", id, state });
-  broadcast({ kind: "PLAYER_JOINED", id, location });
+  broadcastOthers({ kind: "PLAYER_JOINED", id, player: state.players[id] });
   console.log(`${id} has connected`);
 });
