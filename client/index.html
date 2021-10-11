@@ -63,7 +63,7 @@
         );
       };
 
-      let playerId = undefined;
+      let localPlayerId = undefined;
       let state = {};
 
       const keys = {};
@@ -124,18 +124,18 @@
         console.log(event);
         switch (event.kind) {
           case "SET_STATE":
-            playerId = event.id;
+            localPlayerId = event.playerId;
             state = event.state;
             run();
             break;
           case "PLAYER_JOINED":
-            state.players[event.id] = event.player;
+            state.players[event.playerId] = event.player;
             break;
           case "PLAYER_LEFT":
-            delete state.players[event.id];
+            delete state.players[event.playerId];
             break;
           case "PLAYER_MOVED":
-            state.players[event.id].location = event.location;
+            state.players[event.playerId].location = event.location;
             break;
         }
         console.log(state);
@@ -144,15 +144,16 @@
       const render = () => {
         ctx.fillStyle = "white";
         ctx.fillRect(0, 0, width, height);
-        const { x: playerX, y: playerY } = state.players[playerId].location;
+        const { x: playerX, y: playerY } =
+          state.players[localPlayerId].location;
         Object.entries(state.players).forEach(
           ([
-            id,
+            playerId,
             {
               location: { x, y },
             },
           ]) => {
-            if (id === playerId) {
+            if (playerId === localPlayerId) {
               return;
             }
             const dx = x - playerX;
@@ -164,7 +165,6 @@
       };
 
       const update = () => {
-        const { x: playerX, y: playerY } = state.players[playerId].location;
         const velocity = { x: 0, y: 0 };
         if (keys["w"]) {
           velocity.y = playerSpeed;

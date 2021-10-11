@@ -4,7 +4,7 @@ const idGenerator =
   (id = 1) =>
   () =>
     `${id++}`;
-const newId = idGenerator();
+const newPlayerId = idGenerator();
 
 const wss = new WebSocketServer({ port: 8080 });
 
@@ -13,7 +13,7 @@ const state = {
 };
 
 wss.on("connection", (ws) => {
-  const id = newId();
+  const playerId = newPlayerId();
 
   const send = (event, client = ws) => {
     client.send(JSON.stringify(event));
@@ -40,15 +40,15 @@ wss.on("connection", (ws) => {
     console.log(action);
     switch (action.kind) {
       case "MOVE_PLAYER":
-        const oldLocation = state.players[id].location;
+        const oldLocation = state.players[playerId].location;
         const newLocation = {
           x: oldLocation.x + action.velocity.x,
           y: oldLocation.y + action.velocity.y,
         };
-        state.players[id].location = newLocation;
+        state.players[playerId].location = newLocation;
         broadcastAll({
           kind: "PLAYER_MOVED",
-          id,
+          playerId,
           location: newLocation,
         });
         break;
@@ -56,13 +56,17 @@ wss.on("connection", (ws) => {
   });
 
   ws.on("close", () => {
-    delete state.players[id];
-    broadcastOthers({ kind: "PLAYER_LEFT", id });
-    console.log(`${id} has disconnected`);
+    delete state.players[playerId];
+    broadcastOthers({ kind: "PLAYER_LEFT", playerId });
+    console.log(`${playerId} has disconnected`);
   });
 
-  state.players[id] = { location: { x: 0, y: 0 } };
-  send({ kind: "SET_STATE", id, state });
-  broadcastOthers({ kind: "PLAYER_JOINED", id, player: state.players[id] });
-  console.log(`${id} has connected`);
+  state.players[playerId] = { location: { x: 0, y: 0 } };
+  send({ kind: "SET_STATE", playerId, state });
+  broadcastOthers({
+    kind: "PLAYER_JOINED",
+    playerId,
+    player: state.players[playerId],
+  });
+  console.log(`${playerId} has connected`);
 });
