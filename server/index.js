@@ -1,6 +1,8 @@
 import WebSocket, { WebSocketServer } from "ws";
 import { idGenerator } from "../common/index.js";
 
+const UPDATE_RATE = 10;
+
 const newPlayerId = idGenerator();
 
 const wss = new WebSocketServer({ port: 8080 });
@@ -11,25 +13,43 @@ const state = {
 
 wss.on("connection", (ws) => {
   const playerId = newPlayerId();
+  let queuedSendEvents = [];
+  let queuedBroadcastOthersEvents = [];
+  let queuedBroadcastAllEvents = [];
 
-  const send = (event, client = ws) => {
-    client.send(JSON.stringify(event));
+  setInterval(() => {
+    if (queuedSendEvents.length > 0) {
+      ws.send(JSON.stringify(queuedSendEvents));
+      queuedSendEvents = [];
+    }
+    if (queuedBroadcastOthersEvents.length > 0) {
+      wss.clients.forEach((client) => {
+        if (client !== ws && client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify(queuedBroadcastOthersEvents));
+        }
+      });
+      queuedBroadcastOthersEvents = [];
+    }
+    if (queuedBroadcastAllEvents.length > 0) {
+      wss.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify(queuedBroadcastAllEvents));
+        }
+      });
+      queuedBroadcastAllEvents = [];
+    }
+  }, 1000 / UPDATE_RATE);
+
+  const send = (event) => {
+    queuedSendEvents.push(event);
   };
 
   const broadcastOthers = (event) => {
-    wss.clients.forEach((client) => {
-      if (client !== ws && client.readyState === WebSocket.OPEN) {
-        send(event, client);
-      }
-    });
+    queuedBroadcastOthersEvents.push(event);
   };
 
   const broadcastAll = (event) => {
-    wss.clients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
-        send(event, client);
-      }
-    });
+    queuedBroadcastAllEvents.push(event);
   };
 
   ws.on("message", (data) => {

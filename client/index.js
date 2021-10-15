@@ -49,7 +49,9 @@ const drawBullet = (dx, dy) => {
 };
 
 let localPlayerId = undefined;
-let state = {};
+let state = {
+  players: {},
+};
 const unreconciledActions = new Set();
 
 const keys = {};
@@ -114,29 +116,31 @@ const send = (action) => {
 
 ws.onmessage = ({ data }) => {
   setTimeout(() => {
-    const event = JSON.parse(data);
-    const actionId = event.actionId;
-    const removed = unreconciledActions.delete(actionId);
-    if (removed) {
-      return;
-    }
-    console.log(event);
-    switch (event.kind) {
-      case "SET_STATE":
-        localPlayerId = event.playerId;
-        state = event.state;
-        run();
-        break;
-      case "PLAYER_JOINED":
-        state.players[event.playerId] = event.player;
-        break;
-      case "PLAYER_LEFT":
-        delete state.players[event.playerId];
-        break;
-      case "PLAYER_MOVED":
-        state.players[event.playerId].location = event.location;
-        break;
-    }
+    const events = JSON.parse(data);
+    console.log(events);
+    events.forEach((event) => {
+      const actionId = event.actionId;
+      const removed = unreconciledActions.delete(actionId);
+      if (removed) {
+        return;
+      }
+      switch (event.kind) {
+        case "SET_STATE":
+          localPlayerId = event.playerId;
+          state = event.state;
+          run();
+          break;
+        case "PLAYER_JOINED":
+          state.players[event.playerId] = event.player;
+          break;
+        case "PLAYER_LEFT":
+          delete state.players[event.playerId];
+          break;
+        case "PLAYER_MOVED":
+          state.players[event.playerId].location = event.location;
+          break;
+      }
+    });
     console.log(state);
   }, LAG);
 };
