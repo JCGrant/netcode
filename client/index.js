@@ -1,3 +1,5 @@
+const LAG = 250;
+
 const playerSize = 20;
 const playerSpeed = 10;
 const bulletSize = 5;
@@ -99,25 +101,27 @@ const send = (action) => {
 };
 
 ws.onmessage = ({ data }) => {
-  const event = JSON.parse(data);
-  console.log(event);
-  switch (event.kind) {
-    case "SET_STATE":
-      localPlayerId = event.playerId;
-      state = event.state;
-      run();
-      break;
-    case "PLAYER_JOINED":
-      state.players[event.playerId] = event.player;
-      break;
-    case "PLAYER_LEFT":
-      delete state.players[event.playerId];
-      break;
-    case "PLAYER_MOVED":
-      state.players[event.playerId].location = event.location;
-      break;
-  }
-  console.log(state);
+  setTimeout(() => {
+    const event = JSON.parse(data);
+    console.log(event);
+    switch (event.kind) {
+      case "SET_STATE":
+        localPlayerId = event.playerId;
+        state = event.state;
+        run();
+        break;
+      case "PLAYER_JOINED":
+        state.players[event.playerId] = event.player;
+        break;
+      case "PLAYER_LEFT":
+        delete state.players[event.playerId];
+        break;
+      case "PLAYER_MOVED":
+        state.players[event.playerId].location = event.location;
+        break;
+    }
+    console.log(state);
+  }, LAG);
 };
 
 const render = () => {
@@ -157,6 +161,12 @@ const update = () => {
     velocity.x = playerSpeed;
   }
   if (velocity.x !== 0 || velocity.y !== 0) {
+    const { x: playerX, y: playerY } = state.players[localPlayerId].location;
+    const newLocation = {
+      x: playerX + velocity.x,
+      y: playerY + velocity.y,
+    };
+    state.players[localPlayerId].location = newLocation;
     send({
       kind: "MOVE_PLAYER",
       velocity,

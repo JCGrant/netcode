@@ -1,9 +1,6 @@
 import WebSocket, { WebSocketServer } from "ws";
+import { idGenerator } from "../common/index.js";
 
-const idGenerator =
-  (id = 1) =>
-  () =>
-    `${id++}`;
 const newPlayerId = idGenerator();
 
 const wss = new WebSocketServer({ port: 8080 });
