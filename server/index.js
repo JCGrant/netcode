@@ -34,6 +34,7 @@ wss.on("connection", (ws) => {
 
   ws.on("message", (data) => {
     const action = JSON.parse(data);
+    const actionId = action.id;
     console.log(action);
     switch (action.kind) {
       case "MOVE_PLAYER":
@@ -45,6 +46,7 @@ wss.on("connection", (ws) => {
         state.players[playerId].location = newLocation;
         broadcastAll({
           kind: "PLAYER_MOVED",
+          actionId,
           playerId,
           location: newLocation,
         });

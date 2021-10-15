@@ -1,4 +1,8 @@
+import { idGenerator } from "../common/index.js";
+
 const LAG = 250;
+
+const newActionId = idGenerator();
 
 const playerSize = 20;
 const playerSpeed = 10;
@@ -46,6 +50,7 @@ const drawBullet = (dx, dy) => {
 
 let localPlayerId = undefined;
 let state = {};
+const unreconciledActions = new Set();
 
 const keys = {};
 const mouse = {
@@ -97,12 +102,24 @@ canvas.addEventListener(
 const ws = new WebSocket("ws://127.0.0.1:8080");
 
 const send = (action) => {
-  ws.send(JSON.stringify(action));
+  const id = newActionId();
+  unreconciledActions.add(id);
+  ws.send(
+    JSON.stringify({
+      id,
+      ...action,
+    })
+  );
 };
 
 ws.onmessage = ({ data }) => {
   setTimeout(() => {
     const event = JSON.parse(data);
+    const actionId = event.actionId;
+    const removed = unreconciledActions.delete(actionId);
+    if (removed) {
+      return;
+    }
     console.log(event);
     switch (event.kind) {
       case "SET_STATE":
