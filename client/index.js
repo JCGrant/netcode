@@ -1,6 +1,4 @@
-import { idGenerator } from "../common/index.js";
-
-const LAG = 250;
+import { idGenerator, LAG } from "../common/index.js";
 
 const newActionId = idGenerator();
 
@@ -142,7 +140,7 @@ ws.onmessage = ({ data }) => {
       }
     });
     console.log(state);
-  }, LAG);
+  }, LAG / 2);
 };
 
 const render = () => {

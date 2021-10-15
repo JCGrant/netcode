@@ -1,5 +1,5 @@
 import WebSocket, { WebSocketServer } from "ws";
-import { idGenerator } from "../common/index.js";
+import { idGenerator, LAG } from "../common/index.js";
 
 const UPDATE_RATE = 10;
 
@@ -53,25 +53,27 @@ wss.on("connection", (ws) => {
   };
 
   ws.on("message", (data) => {
-    const action = JSON.parse(data);
-    const actionId = action.id;
-    console.log(action);
-    switch (action.kind) {
-      case "MOVE_PLAYER":
-        const oldLocation = state.players[playerId].location;
-        const newLocation = {
-          x: oldLocation.x + action.velocity.x,
-          y: oldLocation.y + action.velocity.y,
-        };
-        state.players[playerId].location = newLocation;
-        broadcastAll({
-          kind: "PLAYER_MOVED",
-          actionId,
-          playerId,
-          location: newLocation,
-        });
-        break;
-    }
+    setTimeout(() => {
+      const action = JSON.parse(data);
+      const actionId = action.id;
+      console.log(action);
+      switch (action.kind) {
+        case "MOVE_PLAYER":
+          const oldLocation = state.players[playerId].location;
+          const newLocation = {
+            x: oldLocation.x + action.velocity.x,
+            y: oldLocation.y + action.velocity.y,
+          };
+          state.players[playerId].location = newLocation;
+          broadcastAll({
+            kind: "PLAYER_MOVED",
+            actionId,
+            playerId,
+            location: newLocation,
+          });
+          break;
+      }
+    }, LAG / 2);
   });
 
   ws.on("close", () => {
