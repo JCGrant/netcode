@@ -1,4 +1,4 @@
-import { idGenerator, LAG } from "../common/index.js";
+import { idGenerator, SERVER_UPDATE_RATE, LAG } from "../common/index.js";
 
 const newActionId = idGenerator();
 
@@ -116,7 +116,7 @@ ws.onmessage = ({ data }) => {
   setTimeout(() => {
     const events = JSON.parse(data);
     console.log(events);
-    events.forEach((event) => {
+    events.forEach((event, i) => {
       const actionId = event.actionId;
       const removed = unreconciledActions.delete(actionId);
       if (removed) {
@@ -135,7 +135,9 @@ ws.onmessage = ({ data }) => {
           delete state.players[event.playerId];
           break;
         case "PLAYER_MOVED":
-          state.players[event.playerId].location = event.location;
+          setTimeout(() => {
+            state.players[event.playerId].location = event.location;
+          }, ((1000 / SERVER_UPDATE_RATE) * i) / events.length);
           break;
       }
     });

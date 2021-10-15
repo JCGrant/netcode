@@ -1,7 +1,5 @@
 import WebSocket, { WebSocketServer } from "ws";
-import { idGenerator, LAG } from "../common/index.js";
-
-const UPDATE_RATE = 10;
+import { idGenerator, LAG, SERVER_UPDATE_RATE } from "../common/index.js";
 
 const newPlayerId = idGenerator();
 
@@ -38,7 +36,7 @@ wss.on("connection", (ws) => {
       });
       queuedBroadcastAllEvents = [];
     }
-  }, 1000 / UPDATE_RATE);
+  }, 1000 / SERVER_UPDATE_RATE);
 
   const send = (event) => {
     queuedSendEvents.push(event);
